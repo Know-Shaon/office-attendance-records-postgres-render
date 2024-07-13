@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Create Team{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Create Team</h1>
+    <form method="post" action="{{ url_for('create_team') }}">
+        <input type="text" name="team_name" placeholder="Team Name" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <button type="submit">Create Team</button>
+    </form>
+</div>
+{% endblock %}
