@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Add Member{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Add Member to {{ team_id }}</h1>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+        {% for category, message in messages %}
+          <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+    <div class="form-container">
+        <form method="post">
+            <input type="text" name="member_name" placeholder="Member Name" required>
+            <button type="submit">Add Member</button>
+        </form>
+        <h2>Existing Members</h2>
+        <ol class="member-list">
+            {% for member in members %}
+                <li>{{ member[0] }} - <a href="{{ url_for('mark_attendance', team_id=team_id, member_name=member[0]) }}">Mark Attendance</a></li>
+            {% endfor %}
+        </ol>
+    </div>
+</div>
+{% endblock %}
