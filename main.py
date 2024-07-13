@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory
 import psycopg2
 import pandas as pd
 import os
@@ -135,6 +135,10 @@ def export_data():
     flash('Data exported to CSV successfully')
     return redirect(url_for('index'))
 
+@app.route('/download/<filename>')
+def download_file(filename):
+    return send_from_directory('Attendance Records', filename)
+
 def update_excel(team_id):
     cursor.execute('''
     SELECT t.team_name, m.member_name, a.date, a.status
@@ -176,8 +180,8 @@ def update_excel(team_id):
     ws.protection.sheet = True
 
     # Save the file
-    filename = f'Attendance Records/{team_id}_attendance_records.xlsx'
-    wb.save(filename)
+    filename = f'{team_id}_attendance_records.xlsx'
+    wb.save(os.path.join('Attendance Records', filename))
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
