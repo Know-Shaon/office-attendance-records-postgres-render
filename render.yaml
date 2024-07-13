@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: ford-office-attendance
+    env: python
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: DATABASE_URL
+        value: postgresql://ford_office_attendance_records_user:gLmdxUmTPA1JAgcDKOfBS9PIez0ugggt@dpg-cq9f9k2ju9rs73b53rag-a.oregon-postgres.render.com/ford_office_attendance_records
