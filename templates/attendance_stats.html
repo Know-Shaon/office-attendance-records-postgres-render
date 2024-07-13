@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance Stats{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Attendance Stats for {{ member_name }} in {{ team_id }}</h1>
+    <ul>
+        <li>Work from Home: {{ stats.get('Work from Home', 0) }}</li>
+        <li>Work from Office: {{ stats.get('Work from Office', 0) }}</li>
+        <li>Leave: {{ stats.get('Leave', 0) }}</li>
+    </ul>
+    <a href="{{ url_for('track_attendance', team_id=team_id) }}">Back to Track Attendance</a>
+</div>
+{% endblock %}

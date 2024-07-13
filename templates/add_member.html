@@ -14,17 +14,19 @@
         </ul>
       {% endif %}
     {% endwith %}
-    <div class="form-container">
-        <form method="post">
-            <input type="text" name="member_name" placeholder="Member Name" required>
-            <button type="submit">Add Member</button>
-        </form>
-        <h2>Existing Members</h2>
-        <ol class="member-list">
-            {% for member in members %}
-                <li>{{ member[0] }} - <a href="{{ url_for('mark_attendance', team_id=team_id, member_name=member[0]) }}">Mark Attendance</a></li>
-            {% endfor %}
-        </ol>
-    </div>
+    <form method="post">
+        <input type="text" name="member_name" placeholder="Member Name" required>
+        <button type="submit">Add Member</button>
+    </form>
+    <h2>Existing Members</h2>
+    <ul class="member-list">
+        {% for member in members %}
+        <li>{{ member[0] }} - <a href="{{ url_for('mark_attendance', team_id=team_id, member_name=member[0]) }}">Mark Attendance</a></li>
+        {% endfor %}
+    </ul>
+    <h2>Options</h2>
+    <ul>
+        <li><a href="{{ url_for('track_attendance', team_id=team_id) }}">Track Attendance Count</a></li>
+    </ul>
 </div>
 {% endblock %}

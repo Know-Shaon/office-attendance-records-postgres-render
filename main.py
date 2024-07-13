@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory, jsonify
 import psycopg2
 import pandas as pd
 import os
@@ -138,6 +138,24 @@ def export_data():
 @app.route('/download/<filename>')
 def download_file(filename):
     return send_from_directory('Attendance Records', filename)
+
+@app.route('/track_attendance/<team_id>', methods=['GET', 'POST'])
+def track_attendance(team_id):
+    team_id = team_id.upper()
+    if request.method == 'POST':
+        member_name = request.form['member_name']
+        cursor.execute('''
+        SELECT status, COUNT(*) FROM attendance
+        JOIN members ON attendance.member_id = members.member_id
+        WHERE members.team_id = %s AND members.member_name = %s
+        GROUP BY status
+        ''', (team_id, member_name))
+        records = cursor.fetchall()
+        stats = {status: count for status, count in records}
+        return render_template('attendance_stats.html', team_id=team_id, member_name=member_name, stats=stats)
+    cursor.execute('SELECT member_name FROM members WHERE team_id = %s', (team_id,))
+    members = cursor.fetchall()
+    return render_template('track_attendance.html', team_id=team_id, members=members)
 
 def update_excel(team_id):
     cursor.execute('''
