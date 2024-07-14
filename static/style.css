@@ -16,6 +16,7 @@ header {
     padding: 10px 20px;
     background-color: #fff;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    flex-direction: column;
 }
 
 .logo-container {
@@ -26,6 +27,14 @@ header {
 .logo {
     height: 50px; /* Adjust as needed */
     width: auto;
+}
+
+.app-title {
+    margin: 0;
+    padding: 10px 0;
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
 }
 
 nav ul {
@@ -141,5 +150,20 @@ button:hover {
 }
 
 .track-attendance:hover {
+    text-decoration: underline;
+}
+
+.create-team {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.create-team a {
+    text-decoration: none;
+    color: #007bff;
+    font-weight: bold;
+}
+
+.create-team a:hover {
     text-decoration: underline;
 }
