@@ -118,9 +118,16 @@ def mark_attendance(team_id, member_name):
         cursor.execute('SELECT member_id FROM members WHERE team_id = %s AND member_name = %s', (team_id, member_name))
         member_id = cursor.fetchone()
         if member_id:
-            cursor.execute('''
-            INSERT INTO attendance (member_id, date, status) VALUES (%s, %s, %s)
-            ''', (member_id[0], date, status))
+            cursor.execute('SELECT * FROM attendance WHERE member_id = %s AND date = %s', (member_id[0], date))
+            existing_record = cursor.fetchone()
+            if existing_record:
+                cursor.execute('''
+                UPDATE attendance SET status = %s WHERE member_id = %s AND date = %s
+                ''', (status, member_id[0], date))
+            else:
+                cursor.execute('''
+                INSERT INTO attendance (member_id, date, status) VALUES (%s, %s, %s)
+                ''', (member_id[0], date, status))
             conn.commit()
             try:
                 update_excel(team_id)
