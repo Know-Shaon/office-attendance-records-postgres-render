@@ -23,12 +23,13 @@ cursor = conn.cursor()
 if not os.path.exists('Attendance Records'):
     os.makedirs('Attendance Records')
 
-# Create tables if they don't exist
+# Create or update tables
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS teams (
     team_id TEXT PRIMARY KEY,
     team_name TEXT,
-    password TEXT
+    member_password TEXT,
+    manager_password TEXT
 )
 ''')
 cursor.execute('''
@@ -45,6 +46,7 @@ CREATE TABLE IF NOT EXISTS attendance (
     member_id INTEGER,
     date TEXT,
     status TEXT,
+    is_manager BOOLEAN DEFAULT FALSE,
     FOREIGN KEY(member_id) REFERENCES members(member_id)
 )
 ''')
@@ -58,78 +60,126 @@ def index():
 def login():
     team_id = request.form['team_id'].upper()
     password = request.form['password']
-    cursor.execute('SELECT password FROM teams WHERE team_id = %s', (team_id,))
+    cursor.execute('SELECT member_password, manager_password FROM teams WHERE team_id = %s', (team_id,))
     record = cursor.fetchone()
-    if record and record[0] == password:
-        session['team_id'] = team_id
-        return redirect(url_for('add_member', team_id=team_id))
-    else:
-        flash('Invalid credentials')
-        return redirect(url_for('index'))
+    if record:
+        if record[0] == password:
+            session['team_id'] = team_id
+            session['is_manager'] = False
+            return redirect(url_for('member_home'))
+        elif record[1] == password:
+            session['team_id'] = team_id
+            session['is_manager'] = True
+            return redirect(url_for('manager_home'))
+    flash('Invalid credentials')
+    return redirect(url_for('index'))
 
 @app.route('/logout')
 def logout():
     session.pop('team_id', None)
+    session.pop('is_manager', None)
     return redirect(url_for('index'))
+
+@app.route('/manager_home')
+def manager_home():
+    if 'team_id' in session and session.get('is_manager'):
+        return render_template('manager_home.html', team_id=session['team_id'])
+    else:
+        flash('Unauthorized access')
+        return redirect(url_for('index'))
+
+@app.route('/member_home')
+def member_home():
+    if 'team_id' in session and not session.get('is_manager'):
+        return render_template('member_home.html', team_id=session['team_id'])
+    else:
+        flash('Unauthorized access')
+        return redirect(url_for('index'))
 
 @app.route('/create_team', methods=['GET', 'POST'])
 def create_team():
     if request.method == 'POST':
         team_name = request.form['team_name'].upper()
-        password = request.form['password']
+        member_password = request.form['member_password']
+        manager_password = request.form['manager_password']
         cursor.execute('SELECT team_id FROM teams WHERE team_id = %s', (team_name,))
         existing_team = cursor.fetchone()
         if existing_team:
             flash('Team ID already exists')
         else:
             cursor.execute('''
-            INSERT INTO teams (team_id, team_name, password) VALUES (%s, %s, %s)
-            ''', (team_name, team_name, password))
+            INSERT INTO teams (team_id, team_name, member_password, manager_password) VALUES (%s, %s, %s, %s)
+            ''', (team_name, team_name, member_password, manager_password))
             conn.commit()
             flash('Team created successfully')
         return redirect(url_for('index'))
     return render_template('create_team.html')
 
-@app.route('/add_member/<team_id>', methods=['GET', 'POST'])
-def add_member(team_id):
-    team_id = team_id.upper()
-    if request.method == 'POST':
-        member_name = request.form['member_name']
-        cursor.execute('SELECT member_id FROM members WHERE team_id = %s AND member_name = %s', (team_id, member_name))
-        existing_member = cursor.fetchone()
-        if existing_member:
-            flash('Member already exists')
-        else:
-            cursor.execute('''
-            INSERT INTO members (team_id, member_name) VALUES (%s, %s)
-            ''', (team_id, member_name))
-            conn.commit()
-            flash('Member added successfully')
-    cursor.execute('SELECT member_name FROM members WHERE team_id = %s', (team_id,))
-    members = cursor.fetchall()
-    return render_template('add_member.html', team_id=team_id, members=members)
+@app.route('/add_member', methods=['GET', 'POST'])
+def add_member():
+    if 'team_id' in session and session.get('is_manager'):
+        if request.method == 'POST':
+            member_name = request.form['member_name']
+            team_id = session['team_id']
+            cursor.execute('SELECT member_id FROM members WHERE team_id = %s AND member_name = %s', (team_id, member_name))
+            existing_member = cursor.fetchone()
+            if existing_member:
+                flash('Member already exists')
+            else:
+                cursor.execute('''
+                INSERT INTO members (team_id, member_name) VALUES (%s, %s)
+                ''', (team_id, member_name))
+                conn.commit()
+                flash('Member added successfully')
+        return render_template('add_member.html', team_id=session['team_id'])
+    else:
+        flash('Unauthorized access')
+        return redirect(url_for('index'))
+
+@app.route('/remove_member', methods=['GET', 'POST'])
+def remove_member():
+    if 'team_id' in session and session.get('is_manager'):
+        team_id = session['team_id']
+        if request.method == 'POST':
+            member_name = request.form['member_name']
+            cursor.execute('SELECT member_id FROM members WHERE team_id = %s AND member_name = %s', (team_id, member_name))
+            member_id = cursor.fetchone()
+            if member_id:
+                cursor.execute('DELETE FROM attendance WHERE member_id = %s', (member_id,))
+                cursor.execute('DELETE FROM members WHERE member_id = %s', (member_id,))
+                conn.commit()
+                flash('Member and all their attendance records removed successfully')
+            else:
+                flash('Member not found')
+        cursor.execute('SELECT member_name FROM members WHERE team_id = %s', (team_id,))
+        members = cursor.fetchall()
+        return render_template('remove_member.html', team_id=team_id, members=members)
+    else:
+        flash('Unauthorized access')
+        return redirect(url_for('index'))
 
 @app.route('/mark_attendance/<team_id>/<member_name>', methods=['GET', 'POST'])
 def mark_attendance(team_id, member_name):
     team_id = team_id.upper()
+    is_manager = session.get('is_manager', False)
     if request.method == 'POST':
         date = request.form['date']
         status = request.form['status']
         cursor.execute('SELECT member_id FROM members WHERE team_id = %s AND member_name = %s', (team_id, member_name))
         member_id = cursor.fetchone()
         if member_id:
-            cursor.execute('SELECT * FROM attendance WHERE member_id = %s AND date = %s', (member_id[0], date))
+            cursor.execute('SELECT * FROM attendance WHERE member_id = %s AND date = %s AND is_manager = %s', (member_id[0], date, is_manager))
             existing_record = cursor.fetchone()
             if existing_record:
                 cursor.execute('''
-                UPDATE attendance SET status = %s WHERE member_id = %s AND date = %s
-                ''', (status, member_id[0], date))
+                UPDATE attendance SET status = %s WHERE member_id = %s AND date = %s AND is_manager = %s
+                ''', (status, member_id[0], date, is_manager))
             else:
                 cursor.execute('''
-                INSERT INTO attendance (member_id, date, status) VALUES (%s, %s, %s)
-                ''', (member_id[0], date, status))
+                INSERT INTO attendance (member_id, date, status, is_manager) VALUES (%s, %s, %s, %s)
+                ''', (member_id[0], date, status, is_manager))
             conn.commit()
-            update_excel(team_id)
+            update_excel(team_id, is_manager)
             flash('Attendance marked successfully')
         else:
             flash('Member not found')
@@ -137,9 +187,10 @@ def mark_attendance(team_id, member_name):
 
 @app.route('/export_data')
 def export_data():
-    cursor.execute('SELECT * FROM attendance')
+    is_manager = session.get('is_manager', False)
+    cursor.execute('SELECT * FROM attendance WHERE is_manager = %s', (is_manager,))
     records = cursor.fetchall()
-    df = pd.DataFrame(records, columns=['ID', 'Member ID', 'Date', 'Status'])
+    df = pd.DataFrame(records, columns=['ID', 'Member ID', 'Date', 'Status', 'Is Manager'])
     df.to_csv('attendance_records.csv', index=False)
     flash('Data exported to CSV successfully')
     return redirect(url_for('index'))
@@ -151,14 +202,15 @@ def download_file(filename):
 @app.route('/track_attendance/<team_id>', methods=['GET', 'POST'])
 def track_attendance(team_id):
     team_id = team_id.upper()
+    is_manager = session.get('is_manager', False)
     if request.method == 'POST':
         member_name = request.form['member_name']
         cursor.execute('''
         SELECT status, COUNT(*) FROM attendance
         JOIN members ON attendance.member_id = members.member_id
-        WHERE members.team_id = %s AND members.member_name = %s
+        WHERE members.team_id = %s AND members.member_name = %s AND attendance.is_manager = %s
         GROUP BY status
-        ''', (team_id, member_name))
+        ''', (team_id, member_name, is_manager))
         records = cursor.fetchall()
         stats = {status: count for status, count in records}
         return render_template('attendance_stats.html', team_id=team_id, member_name=member_name, stats=stats)
@@ -169,6 +221,7 @@ def track_attendance(team_id):
 @app.route('/download_monthly_report/<team_id>', methods=['GET', 'POST'])
 def download_monthly_report(team_id):
     team_id = team_id.upper()
+    is_manager = session.get('is_manager', False)
     if request.method == 'POST':
         month = request.form['month']
         year = request.form['year']
@@ -177,8 +230,8 @@ def download_monthly_report(team_id):
         FROM attendance a
         JOIN members m ON a.member_id = m.member_id
         JOIN teams t ON m.team_id = t.team_id
-        WHERE t.team_id = %s AND a.date LIKE %s
-        ''', (team_id, f'{year}-{month}%'))
+        WHERE t.team_id = %s AND a.date LIKE %s AND a.is_manager = %s
+        ''', (team_id, f'{year}-{month}%', is_manager))
         records = cursor.fetchall()
         df = pd.DataFrame(records, columns=['Team Name', 'Member Name', 'Date', 'Status'])
 
@@ -197,7 +250,7 @@ def download_monthly_report(team_id):
                 try:
                     if len(str(cell.value)) > max_length:
                         max_length = len(cell.value)
-                except:
+                except Exception:
                     pass
             adjusted_width = (max_length + 2)
             ws.column_dimensions[column].width = adjusted_width
@@ -239,21 +292,6 @@ def remove_team():
     flash('Team and all its members and attendance records removed successfully')
     return redirect(url_for('admin'))
 
-@app.route('/remove_member', methods=['POST'])
-def remove_member():
-    team_id = request.form['team_id'].upper()
-    member_name = request.form['member_name']
-    cursor.execute('SELECT member_id FROM members WHERE team_id = %s AND member_name = %s', (team_id, member_name))
-    member_id = cursor.fetchone()
-    if member_id:
-        cursor.execute('DELETE FROM attendance WHERE member_id = %s', (member_id,))
-        cursor.execute('DELETE FROM members WHERE member_id = %s', (member_id,))
-        conn.commit()
-        flash('Member and all their attendance records removed successfully')
-    else:
-        flash('Member not found')
-    return redirect(url_for('admin'))
-
 @app.route('/get_members/<team_id>')
 def get_members(team_id):
     cursor.execute('SELECT member_name FROM members WHERE team_id = %s', (team_id,))
@@ -261,14 +299,14 @@ def get_members(team_id):
     member_names = [member[0] for member in members]
     return jsonify({'members': member_names})
 
-def update_excel(team_id):
+def update_excel(team_id, is_manager):
     cursor.execute('''
     SELECT t.team_name, m.member_name, a.date, a.status
     FROM attendance a
     JOIN members m ON a.member_id = m.member_id
     JOIN teams t ON m.team_id = t.team_id
-    WHERE t.team_id = %s
-    ''', (team_id,))
+    WHERE t.team_id = %s AND a.is_manager = %s
+    ''', (team_id, is_manager))
     records = cursor.fetchall()
     df = pd.DataFrame(records, columns=['Team Name', 'Member Name', 'Date', 'Status'])
 
@@ -286,7 +324,7 @@ def update_excel(team_id):
             try:
                 if len(str(cell.value)) > max_length:
                     max_length = len(cell.value)
-            except:
+            except Exception:
                 pass
         adjusted_width = (max_length + 2)
         ws.column_dimensions[column].width = adjusted_width
