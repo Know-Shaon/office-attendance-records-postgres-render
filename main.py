@@ -68,7 +68,7 @@ def login():
         flash('Invalid credentials')
         return redirect(url_for('index'))
 
-@app.route('/logout')
+@app.route('/logout', methods=['GET', 'POST'])
 def logout():
     session.pop('team_id', None)
     return redirect(url_for('index'))
