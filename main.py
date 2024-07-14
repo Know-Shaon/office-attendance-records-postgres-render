@@ -130,10 +130,14 @@ def mark_attendance(team_id, member_name):
                 INSERT INTO attendance (member_id, date, status) VALUES (%s, %s, %s)
                 ''', (member_id[0], date, status))
             conn.commit()
-            update_excel(team_id)
-            flash('Attendance marked successfully')
+            try:
+                update_excel(team_id)
+                flash('Attendance marked successfully')
+            except PermissionError:
+                flash('Attendance marked, but unable to update Excel file. Please close the file if it is open.')
         else:
             flash('Member not found')
+        return redirect(url_for('logout'))  # Log out after marking attendance
     return render_template('mark_attendance.html', team_id=team_id, member_name=member_name)
 
 @app.route('/export_data')
@@ -198,7 +202,7 @@ def download_monthly_report(team_id):
                 try:
                     if len(str(cell.value)) > max_length:
                         max_length = len(cell.value)
-                except Exception as e:
+                except:
                     pass
             adjusted_width = (max_length + 2)
             ws.column_dimensions[column].width = adjusted_width
