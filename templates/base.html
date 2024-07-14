@@ -17,10 +17,13 @@
                 <li><a href="{{ url_for('index') }}">Home</a></li>
                 <li><a href="{{ url_for('admin_login') }}">Admin</a></li>
                 {% if session.get('team_id') %}
-                <li><a href="{{ url_for('add_member', team_id=session['team_id']) }}">Add Member</a></li>
-                <li><a href="{{ url_for('track_attendance', team_id=session['team_id']) }}">Track Attendance Count</a></li>
-                <li><a href="{{ url_for('download_monthly_report', team_id=session['team_id']) }}">Download Monthly Report</a></li>
-                <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                    {% if session.get('is_manager') %}
+                        <li><a href="{{ url_for('add_member') }}">Add Member</a></li>
+                        <li><a href="{{ url_for('remove_member') }}">Remove Member</a></li>
+                    {% endif %}
+                    <li><a href="{{ url_for('track_attendance', team_id=session['team_id']) }}">Track Attendance Count</a></li>
+                    <li><a href="{{ url_for('download_monthly_report', team_id=session['team_id']) }}">Download Monthly Report</a></li>
+                    <li><a href="{{ url_for('logout') }}">Logout</a></li>
                 {% endif %}
             </ul>
         </nav>
