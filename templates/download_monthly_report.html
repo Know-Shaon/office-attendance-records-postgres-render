@@ -8,18 +8,24 @@
     <form method="post" action="{{ url_for('download_monthly_report', team_id=team_id) }}">
         <select name="month" required>
             <option value="" disabled selected>Select Month</option>
-            <option value="2023-01">January 2023</option>
-            <option value="2023-02">February 2023</option>
-            <option value="2023-03">March 2023</option>
-            <option value="2023-04">April 2023</option>
-            <option value="2023-05">May 2023</option>
-            <option value="2023-06">June 2023</option>
-            <option value="2023-07">July 2023</option>
-            <option value="2023-08">August 2023</option>
-            <option value="2023-09">September 2023</option>
-            <option value="2023-10">October 2023</option>
-            <option value="2023-11">November 2023</option>
-            <option value="2023-12">December 2023</option>
+            <option value="01">January</option>
+            <option value="02">February</option>
+            <option value="03">March</option>
+            <option value="04">April</option>
+            <option value="05">May</option>
+            <option value="06">June</option>
+            <option value="07">July</option>
+            <option value="08">August</option>
+            <option value="09">September</option>
+            <option value="10">October</option>
+            <option value="11">November</option>
+            <option value="12">December</option>
+        </select>
+        <select name="year" required>
+            <option value="" disabled selected>Select Year</option>
+            <option value="2023">2023</option>
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
         </select>
         <button type="submit">Download Report</button>
     </form>
