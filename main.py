@@ -52,7 +52,6 @@ conn.commit()
 
 @app.route('/')
 def index():
-    session.pop('team_id', None)  # Log out the user
     return render_template('index.html')
 
 @app.route('/login', methods=['POST'])
@@ -68,7 +67,7 @@ def login():
         flash('Invalid credentials')
         return redirect(url_for('index'))
 
-@app.route('/logout', methods=['GET', 'POST'])
+@app.route('/logout')
 def logout():
     session.pop('team_id', None)
     return redirect(url_for('index'))
@@ -130,14 +129,10 @@ def mark_attendance(team_id, member_name):
                 INSERT INTO attendance (member_id, date, status) VALUES (%s, %s, %s)
                 ''', (member_id[0], date, status))
             conn.commit()
-            try:
-                update_excel(team_id)
-                flash('Attendance marked successfully')
-            except PermissionError:
-                flash('Attendance marked, but unable to update Excel file. Please close the file if it is open.')
+            update_excel(team_id)
+            flash('Attendance marked successfully')
         else:
             flash('Member not found')
-        return redirect(url_for('logout'))  # Log out after marking attendance
     return render_template('mark_attendance.html', team_id=team_id, member_name=member_name)
 
 @app.route('/export_data')
@@ -221,7 +216,6 @@ def download_monthly_report(team_id):
 
 @app.route('/admin_login')
 def admin_login():
-    session.pop('team_id', None)  # Log out the user
     return render_template('admin_login.html')
 
 @app.route('/admin', methods=['POST'])
@@ -292,7 +286,7 @@ def update_excel(team_id):
             try:
                 if len(str(cell.value)) > max_length:
                     max_length = len(cell.value)
-            except Exception as e:
+            except:
                 pass
         adjusted_width = (max_length + 2)
         ws.column_dimensions[column].width = adjusted_width
