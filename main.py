@@ -129,7 +129,7 @@ def mark_attendance(team_id, member_name):
                 flash('Attendance marked, but unable to update Excel file. Please close the file if it is open.')
         else:
             flash('Member not found')
-        return redirect(url_for('index'))
+        return redirect(url_for('logout'))  # Log out after marking attendance
     return render_template('mark_attendance.html', team_id=team_id, member_name=member_name)
 
 @app.route('/export_data')
@@ -210,6 +210,44 @@ def download_monthly_report(team_id):
         return send_from_directory('Attendance Records', filename)
 
     return render_template('download_monthly_report.html', team_id=team_id)
+
+@app.route('/admin_login')
+def admin_login():
+    return render_template('admin_login.html')
+
+@app.route('/admin', methods=['POST'])
+def admin():
+    admin_password = request.form['admin_password']
+    if admin_password == 'Admin@123':
+        return render_template('admin.html')
+    else:
+        flash('Invalid admin password')
+        return redirect(url_for('admin_login'))
+
+@app.route('/remove_team', methods=['POST'])
+def remove_team():
+    team_id = request.form['team_id'].upper()
+    cursor.execute('DELETE FROM attendance WHERE member_id IN (SELECT member_id FROM members WHERE team_id = %s)', (team_id,))
+    cursor.execute('DELETE FROM members WHERE team_id = %s', (team_id,))
+    cursor.execute('DELETE FROM teams WHERE team_id = %s', (team_id,))
+    conn.commit()
+    flash('Team and all its members and attendance records removed successfully')
+    return redirect(url_for('admin'))
+
+@app.route('/remove_member', methods=['POST'])
+def remove_member():
+    team_id = request.form['team_id'].upper()
+    member_name = request.form['member_name']
+    cursor.execute('SELECT member_id FROM members WHERE team_id = %s AND member_name = %s', (team_id, member_name))
+    member_id = cursor.fetchone()
+    if member_id:
+        cursor.execute('DELETE FROM attendance WHERE member_id = %s', (member_id,))
+        cursor.execute('DELETE FROM members WHERE member_id = %s', (member_id,))
+        conn.commit()
+        flash('Member and all their attendance records removed successfully')
+    else:
+        flash('Member not found')
+    return redirect(url_for('admin'))
 
 def update_excel(team_id):
     cursor.execute('''
