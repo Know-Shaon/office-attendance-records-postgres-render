@@ -14,7 +14,7 @@
         </ul>
       {% endif %}
     {% endwith %}
-    <form method="post" action="{{ url_for('login') }}">
+    <form method="post" action="{{ url_for('login') }}" autocomplete="off">
         <input type="text" name="team_id" placeholder="Team ID" required>
         <input type="password" name="password" placeholder="Password" required>
         <button type="submit">Login</button>

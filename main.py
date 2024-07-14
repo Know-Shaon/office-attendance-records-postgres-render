@@ -72,6 +72,16 @@ def logout():
     session.pop('team_id', None)
     return redirect(url_for('index'))
 
+@app.route('/home_redirect')
+def home_redirect():
+    session.pop('team_id', None)
+    return redirect(url_for('index'))
+
+@app.route('/admin_redirect')
+def admin_redirect():
+    session.pop('team_id', None)
+    return redirect(url_for('admin_login'))
+
 @app.route('/create_team', methods=['GET', 'POST'])
 def create_team():
     if request.method == 'POST':
