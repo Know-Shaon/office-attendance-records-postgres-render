@@ -1,29 +1,26 @@
 {% extends "base.html" %}
 
-{% block title %}Home{% endblock %}
+{% block title %}Login{% endblock %}
 
 {% block content %}
 <div class="container">
-    <h1>Welcome to Work Tracker</h1>
-    <div>
-        <h2>Member Login</h2>
-        <form method="post" action="{{ url_for('member_login') }}">
-            <input type="text" name="team_id" placeholder="Team ID" required>
-            <input type="password" name="password" placeholder="Password" required>
-            <button type="submit">Login</button>
-        </form>
-    </div>
-    <div>
-        <h2>Manager Login</h2>
-        <a href="{{ url_for('manager_login') }}">
-            <button>Manager Login</button>
-        </a>
-    </div>
-    <div>
-        <h2>Create Team</h2>
-        <a href="{{ url_for('create_team') }}">
-            <button>Create Team</button>
-        </a>
+    <h1>Login</h1>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+        {% for category, message in messages %}
+          <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+    <form method="post" action="{{ url_for('login') }}">
+        <input type="text" name="team_id" placeholder="Team ID" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <button type="submit">Login</button>
+    </form>
+    <div class="create-team">
+        <a href="{{ url_for('create_team') }}">Create a New Team</a>
     </div>
 </div>
 {% endblock %}
