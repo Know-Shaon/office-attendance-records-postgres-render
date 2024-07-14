@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Download Monthly Report{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Download Monthly Report for {{ team_id }}</h1>
+    <form method="post" action="{{ url_for('download_monthly_report', team_id=team_id) }}">
+        <select name="month" required>
+            <option value="" disabled selected>Select Month</option>
+            <option value="2023-01">January 2023</option>
+            <option value="2023-02">February 2023</option>
+            <option value="2023-03">March 2023</option>
+            <option value="2023-04">April 2023</option>
+            <option value="2023-05">May 2023</option>
+            <option value="2023-06">June 2023</option>
+            <option value="2023-07">July 2023</option>
+            <option value="2023-08">August 2023</option>
+            <option value="2023-09">September 2023</option>
+            <option value="2023-10">October 2023</option>
+            <option value="2023-11">November 2023</option>
+            <option value="2023-12">December 2023</option>
+        </select>
+        <button type="submit">Download Report</button>
+    </form>
+</div>
+{% endblock %}
