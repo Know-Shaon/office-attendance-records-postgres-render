@@ -15,12 +15,9 @@
     </div>
     <div>
         <h2>Create Team</h2>
-        <form method="post" action="{{ url_for('create_team') }}">
-            <input type="text" name="team_name" placeholder="Team Name" required>
-            <input type="password" name="member_password" placeholder="Member Password" required>
-            <input type="password" name="manager_password" placeholder="Manager Password" required>
-            <button type="submit">Create Team</button>
-        </form>
+        <a href="{{ url_for('create_team') }}">
+            <button>Create Team</button>
+        </a>
     </div>
 </div>
 {% endblock %}
