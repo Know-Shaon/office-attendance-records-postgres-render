@@ -13,7 +13,7 @@
         </div>
         <nav>
             <ul>
-                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('logout') }}">Home</a></li> <!-- Home now logs out the user -->
                 {% if session.get('team_id') %}
                 <li><a href="{{ url_for('add_member', team_id=session['team_id']) }}">Add Member</a></li>
                 <li><a href="{{ url_for('track_attendance', team_id=session['team_id']) }}">Track Attendance Count</a></li>

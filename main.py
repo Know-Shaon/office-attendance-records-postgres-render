@@ -168,17 +168,18 @@ def download_monthly_report(team_id):
     team_id = team_id.upper()
     if request.method == 'POST':
         month = request.form['month']
+        year = request.form['year']
         cursor.execute('''
         SELECT t.team_name, m.member_name, a.date, a.status
         FROM attendance a
         JOIN members m ON a.member_id = m.member_id
         JOIN teams t ON m.team_id = t.team_id
         WHERE t.team_id = %s AND a.date LIKE %s
-        ''', (team_id, f'{month}%'))
+        ''', (team_id, f'{year}-{month}%'))
         records = cursor.fetchall()
         df = pd.DataFrame(records, columns=['Team Name', 'Member Name', 'Date', 'Status'])
 
-        filename = f'{team_id}_attendance_{month}.xlsx'
+        filename = f'{team_id}_attendance_{year}_{month}.xlsx'
         wb = Workbook()
         ws = wb.active
         ws.title = "Attendance Records"
