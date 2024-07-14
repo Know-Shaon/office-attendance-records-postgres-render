@@ -60,28 +60,41 @@ conn.commit()
 def index():
     return render_template('index.html')
 
-@app.route('/login', methods=['POST'])
-def login():
-    try:
-        team_id = request.form['team_id'].upper()
-        password = request.form['password']
-        cursor.execute('SELECT member_password, manager_password FROM teams WHERE team_id = %s', (team_id,))
-        record = cursor.fetchone()
-        if record:
-            if record[0] == password:
+@app.route('/member_login', methods=['GET', 'POST'])
+def member_login():
+    if request.method == 'POST':
+        try:
+            team_id = request.form['team_id'].upper()
+            password = request.form['password']
+            cursor.execute('SELECT member_password FROM teams WHERE team_id = %s', (team_id,))
+            record = cursor.fetchone()
+            if record and record[0] == password:
                 session['team_id'] = team_id
                 session['is_manager'] = False
                 return redirect(url_for('member_home'))
-            elif record[1] == password:
+            flash('Invalid credentials')
+        except Exception as e:
+            logging.error("Error during member login: %s", e)
+            flash('An error occurred during login')
+    return render_template('member_login.html')
+
+@app.route('/manager_login', methods=['GET', 'POST'])
+def manager_login():
+    if request.method == 'POST':
+        try:
+            team_id = request.form['team_id'].upper()
+            password = request.form['password']
+            cursor.execute('SELECT manager_password FROM teams WHERE team_id = %s', (team_id,))
+            record = cursor.fetchone()
+            if record and record[0] == password:
                 session['team_id'] = team_id
                 session['is_manager'] = True
                 return redirect(url_for('manager_home'))
-        flash('Invalid credentials')
-        return redirect(url_for('index'))
-    except Exception as e:
-        logging.error("Error during login: %s", e)
-        flash('An error occurred during login')
-        return redirect(url_for('index'))
+            flash('Invalid credentials')
+        except Exception as e:
+            logging.error("Error during manager login: %s", e)
+            flash('An error occurred during login')
+    return render_template('manager_login.html')
 
 @app.route('/logout')
 def logout():
