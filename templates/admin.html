@@ -5,17 +5,55 @@
 {% block content %}
 <div class="container">
     <h1>Admin Panel</h1>
+    
     <h2>Remove Team</h2>
     <form method="post" action="{{ url_for('remove_team') }}">
-        <input type="text" name="team_id" placeholder="Team ID" required>
+        <select name="team_id" required>
+            <option value="" disabled selected>Select Team</option>
+            {% for team in teams %}
+            <option value="{{ team.team_id }}">{{ team.team_id }}</option>
+            {% endfor %}
+        </select>
         <button type="submit">Remove Team</button>
     </form>
+    
     <h2>Remove Team Member</h2>
     <form method="post" action="{{ url_for('remove_member') }}">
-        <input type="text" name="team_id" placeholder="Team ID" required>
-        <input type="text" name="member_name" placeholder="Member Name" required>
+        <select id="team_select" name="team_id" required>
+            <option value="" disabled selected>Select Team</option>
+            {% for team in teams %}
+            <option value="{{ team.team_id }}">{{ team.team_id }}</option>
+            {% endfor %}
+        </select>
+        <select id="member_select" name="member_name" required>
+            <option value="" disabled selected>Select Member</option>
+        </select>
         <button type="submit">Remove Member</button>
     </form>
 </div>
-{% endblock %}
 
+<script>
+    document.getElementById('team_select').addEventListener('change', function() {
+        var teamId = this.value;
+        fetch('/get_members/' + teamId)
+            .then(response => response.json())
+            .then(data => {
+                var memberSelect = document.getElementById('member_select');
+                memberSelect.innerHTML = '';
+                var defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.disabled = true;
+                defaultOption.selected = true;
+                defaultOption.textContent = 'Select Member';
+                memberSelect.appendChild(defaultOption);
+                data.members.forEach(member => {
+                    var option = document.createElement('option');
+                    option.value = member;
+                    option.textContent = member;
+                    memberSelect.appendChild(option);
+                });
+            });
+    });
+</script>
+
+{% endblock %}
