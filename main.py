@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory, session
+from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory, session, jsonify
 import psycopg2
 import pandas as pd
 import os
@@ -226,7 +226,9 @@ def admin_login():
 def admin():
     admin_password = request.form['admin_password']
     if admin_password == 'Admin@123':
-        return render_template('admin.html')
+        cursor.execute('SELECT team_id FROM teams')
+        teams = cursor.fetchall()
+        return render_template('admin.html', teams=teams)
     else:
         flash('Invalid admin password')
         return redirect(url_for('admin_login'))
@@ -255,6 +257,13 @@ def remove_member():
     else:
         flash('Member not found')
     return redirect(url_for('admin'))
+
+@app.route('/get_members/<team_id>')
+def get_members(team_id):
+    cursor.execute('SELECT member_name FROM members WHERE team_id = %s', (team_id,))
+    members = cursor.fetchall()
+    member_names = [member[0] for member in members]
+    return jsonify({'members': member_names})
 
 def update_excel(team_id):
     cursor.execute('''
