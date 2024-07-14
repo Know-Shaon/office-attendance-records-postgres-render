@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory, session
 import psycopg2
 import pandas as pd
 import os
@@ -61,10 +61,16 @@ def login():
     cursor.execute('SELECT password FROM teams WHERE team_id = %s', (team_id,))
     record = cursor.fetchone()
     if record and record[0] == password:
+        session['team_id'] = team_id
         return redirect(url_for('add_member', team_id=team_id))
     else:
         flash('Invalid credentials')
         return redirect(url_for('index'))
+
+@app.route('/logout')
+def logout():
+    session.pop('team_id', None)
+    return redirect(url_for('index'))
 
 @app.route('/create_team', methods=['GET', 'POST'])
 def create_team():
@@ -157,6 +163,53 @@ def track_attendance(team_id):
     members = cursor.fetchall()
     return render_template('track_attendance.html', team_id=team_id, members=members)
 
+@app.route('/download_monthly_report/<team_id>', methods=['GET', 'POST'])
+def download_monthly_report(team_id):
+    team_id = team_id.upper()
+    if request.method == 'POST':
+        month = request.form['month']
+        cursor.execute('''
+        SELECT t.team_name, m.member_name, a.date, a.status
+        FROM attendance a
+        JOIN members m ON a.member_id = m.member_id
+        JOIN teams t ON m.team_id = t.team_id
+        WHERE t.team_id = %s AND a.date LIKE %s
+        ''', (team_id, f'{month}%'))
+        records = cursor.fetchall()
+        df = pd.DataFrame(records, columns=['Team Name', 'Member Name', 'Date', 'Status'])
+
+        filename = f'{team_id}_attendance_{month}.xlsx'
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Attendance Records"
+
+        for r in dataframe_to_rows(df, index=False, header=True):
+            ws.append(r)
+
+        for col in ws.columns:
+            max_length = 0
+            column = col[0].column_letter
+            for cell in col:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(cell.value)
+                except:
+                    pass
+            adjusted_width = (max_length + 2)
+            ws.column_dimensions[column].width = adjusted_width
+
+        for row in ws.iter_rows(min_row=1, min_col=1, max_row=1, max_col=len(df.columns)):
+            for cell in row:
+                cell.protection = Protection(locked=True)
+                cell.font = Font(bold=True)
+
+        ws.protection.sheet = True
+        wb.save(os.path.join('Attendance Records', filename))
+
+        return send_from_directory('Attendance Records', filename)
+
+    return render_template('download_monthly_report.html', team_id=team_id)
+
 def update_excel(team_id):
     cursor.execute('''
     SELECT t.team_name, m.member_name, a.date, a.status
@@ -168,7 +221,6 @@ def update_excel(team_id):
     records = cursor.fetchall()
     df = pd.DataFrame(records, columns=['Team Name', 'Member Name', 'Date', 'Status'])
 
-    # Create a new workbook and add data
     wb = Workbook()
     ws = wb.active
     ws.title = "Attendance Records"
@@ -176,7 +228,6 @@ def update_excel(team_id):
     for r in dataframe_to_rows(df, index=False, header=True):
         ws.append(r)
 
-    # Make the Excel file non-editable
     for col in ws.columns:
         max_length = 0
         column = col[0].column_letter
@@ -194,10 +245,7 @@ def update_excel(team_id):
             cell.protection = Protection(locked=True)
             cell.font = Font(bold=True)
 
-    # Protect the sheet
     ws.protection.sheet = True
-
-    # Save the file
     filename = f'{team_id}_attendance_records.xlsx'
     wb.save(os.path.join('Attendance Records', filename))
 
