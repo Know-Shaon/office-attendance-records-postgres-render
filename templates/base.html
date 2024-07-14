@@ -11,10 +11,10 @@
         <div class="logo-container">
             <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" class="logo">
         </div>
-        <h1 class="app-title">Work Tracker</h1> <!-- Added header title -->
+        <h1 class="app-title">Work Tracker</h1>
         <nav>
             <ul>
-                <li><a href="{{ url_for('logout') }}">Home</a></li>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
                 <li><a href="{{ url_for('admin_login') }}">Admin</a></li>
                 {% if session.get('team_id') %}
                 <li><a href="{{ url_for('add_member', team_id=session['team_id']) }}">Add Member</a></li>
@@ -28,5 +28,24 @@
     <div class="container">
         {% block content %}{% endblock %}
     </div>
+
+    <script>
+        var timeout;
+
+        function resetTimeout() {
+            clearTimeout(timeout);
+            timeout = setTimeout(function() {
+                window.location.href = "{{ url_for('logout') }}";
+            }, 60000); // 60 seconds
+        }
+
+        window.onload = resetTimeout;
+        window.onmousemove = resetTimeout;
+        window.onkeydown = resetTimeout;
+
+        window.addEventListener('beforeunload', function () {
+            navigator.sendBeacon("{{ url_for('logout') }}");
+        });
+    </script>
 </body>
 </html>

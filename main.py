@@ -129,14 +129,10 @@ def mark_attendance(team_id, member_name):
                 INSERT INTO attendance (member_id, date, status) VALUES (%s, %s, %s)
                 ''', (member_id[0], date, status))
             conn.commit()
-            try:
-                update_excel(team_id)
-                flash('Attendance marked successfully')
-            except PermissionError:
-                flash('Attendance marked, but unable to update Excel file. Please close the file if it is open.')
+            update_excel(team_id)
+            flash('Attendance marked successfully')
         else:
             flash('Member not found')
-        return redirect(url_for('logout'))  # Log out after marking attendance
     return render_template('mark_attendance.html', team_id=team_id, member_name=member_name)
 
 @app.route('/export_data')
